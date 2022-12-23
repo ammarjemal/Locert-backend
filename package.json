@@ -1,0 +1,23 @@
+{
+  "name": "final-project-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js",
+    "watch": "watch build ./public/js/index.js --out-dir ./public/js --out-file build.js",
+    "build": "parcel build ./public/js/index.js --out-dir ./public/js --out-file build.js"
+  },
+  "author": "Ammar Jemal",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mongoose": "^5.13.15",
+    "parcel": "^2.8.2"
+  }
+}
