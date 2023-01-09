@@ -5,11 +5,10 @@ const router = express.Router();
 
 router
     .route('/')
-    // .get(researcherController.getAllResearchers)
     .post(researcherController.createResearcher)
 
 router
-    .route('/:uid')
+    .route('/get-researcher/:uid')
     .get(researcherController.getResearcherByUID)
 
 router
@@ -19,5 +18,17 @@ router
 router
     .route('/check-isBanned/:email')
     .get(researcherController.checkIsBanned)
+
+router
+    .route('/update-user/:_id')
+    .patch(researcherController.updateUser)
+
+router
+    .route('/update-profile-picture/:_id')
+    .patch(researcherController.updateProfilePicture)
+
+router
+    .route('/get-suggested-users')
+    .get(researcherController.getSuggestedUsers)
 
 module.exports = router;

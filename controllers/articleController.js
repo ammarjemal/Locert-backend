@@ -2,18 +2,26 @@ const Article = require('./../models/articleModel');
 
 exports.getArticles = async (req, res) => {
     try {
-        //BUILD QUERY
-        // 1A) Filtering
-        const queryObj = { ...req.query };
-        const exculdedFields = ['page', 'sort', 'limit', 'fields'];  // fields => to specify what columns should be returned
-        exculdedFields.forEach(el => delete queryObj[el]);
         //{ status: 'APPROVED' }
-        //1B) Advanced filtering
-        let queryStr = JSON.stringify(queryObj);
-        queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
-        // let query = Article.find(JSON.parse(queryStr));
-
-        const articles = await Article.find(JSON.parse(queryStr)).sort({date: -1});
+        const articles = await Article.aggregate([
+            { $match: req.query },
+            {
+                $lookup: {
+                    from: 'researchers',
+                    let: { uid: '$uid'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ['$uid', '$$uid']
+                                }
+                            }
+                        }
+                    ],
+                as: 'researcherData'
+                }
+            },{ $sort: {date: -1} }
+        ]);
         res.status(200).json({
             status: 'success',
             results: articles.length,
@@ -31,8 +39,29 @@ exports.getArticles = async (req, res) => {
 
 exports.getUserPosts = async (req, res) => {
     try {
-        const articles = await Article.find({$and: [{ uid: req.params.uid }, { status: "APPROVED" }]}).sort({date: -1});
-
+        const articles = await Article.aggregate([
+            {
+                $match: {$and: [{ uid: req.params.uid }, req.query]}
+            },{
+                $lookup: {
+                    from: 'researchers',
+                    let: { uid: '$uid'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ['$uid', '$$uid']
+                                }
+                            }
+                        }
+                        
+                    ],
+                as: 'researcherData'
+                }
+            },{
+                $sort: {date: -1}
+            }
+        ]);
         res.status(200).json({
             status: 'success',
             results: articles.length,
@@ -141,25 +170,61 @@ exports.postComment = async (req, res) => {
 exports.getComments = async (req, res) => {
     try{
         const postId = req.params.postId;
-        const { comments } = await Article.findOne(
-            { 
-                _id: postId 
-            },{
-                comments: 1
-            }
-        ).sort({date: -1});
+        const comments = await Article.aggregate([
+            {   $match: { $expr : { $eq: [ "$_id" , { $toObjectId: postId } ] } } },
+            {
+                $addFields: { 
+                    "comments": { "$ifNull" : [ "$comments", [ ] ] }    
+                } 
+            },
+            {
+                $lookup: {
+                    from: "researchers",
+                    localField: "comments.uid",
+                    foreignField: "uid",
+                    as: "researchers"
+                }
+            },
+            {
+                $addFields: {
+                    comments: {
+                        $map: {
+                            input: "$comments",
+                            in: {
+                                $mergeObjects: [
+                                    "$$this",
+                                    { "researcher": {
+                                        $arrayElemAt: [
+                                            "$researchers",
+                                            { 
+                                                $indexOfArray: [
+                                                    "$researchers.uid",
+                                                    "$$this.uid"
+                                                ] 
+                                            }
+                                        ]
+                                    } }
+                                ]
+                            }
+                        }
+                    }
+                } 
+            },
+            {   $project: { "comments": 1 } },
+        ])
         if(comments){
             res.status(200).json({
                 status: "success",
                 results: comments.length,
                 data: {
-                    comments
+                    comments: comments[0].comments
                 }
             })
         }else{
             res.status(200).json({}); // no comment was found with the uid
         }
     }catch(error){
+        console.log(error);
         res.status(400).json({
             status: "fail",
             message: error
@@ -169,14 +234,46 @@ exports.getComments = async (req, res) => {
 exports.likeComment = async (req, res) => {
     try{
         const postId = req.params.postId;
-        // const commentId = req.params.commentId;
+        const commentId = req.params.commentId;
+        const query = {_id: postId };
         const updateDocument = {
-            $push: { "comments.$.likes": req.body } 
-          };
-        const article = await Article.findByIdAndUpdate(postId, updateDocument, {
-            new: true, // to return the updated (new) document
-            runValidators: true,
+            $push: { "comments.$[commentItem].likes": req.body }
+        };
+        const options = {
+            arrayFilters: [{
+                "commentItem.commentId": commentId,
+            }]
+        };
+        const article = await Article.updateOne(query, updateDocument, options);
+        console.log(article)
+        res.status(201).json({
+            status: "success",
+            data: {
+                article
+            }
+        });
+    }catch (error){
+        console.log(error);
+        res.status(400).json({
+            status: "fail",
+            message: error
         })
+    }
+}
+exports.unlikeComment = async (req, res) => {
+    try{
+        const postId = req.params.postId;
+        const commentId = req.params.commentId;
+        const query = {_id: postId };
+        const updateDocument = {
+            $pull: { "comments.$[commentItem].likes": req.body }
+        };
+        const options = {
+            arrayFilters: [{
+                "commentItem.commentId": commentId,
+            }]
+        };
+        const article = await Article.updateOne(query, updateDocument, options);
         res.status(201).json({
             status: "success",
             data: {
@@ -190,18 +287,12 @@ exports.likeComment = async (req, res) => {
         })
     }
 }
-
-exports.unlikeComment = async (req, res) => {
+exports.deleteArticle = async (req, res) => {
     try{
         const postId = req.params.postId;
         // const commentId = req.params.commentId;
-        const updateDocument = {
-            $push: { "comments.$.likes": req.body } 
-        };
-        const article = await Article.findByIdAndUpdate(postId, updateDocument, {
-            new: true, // to return the updated (new) document
-            runValidators: true,
-        })
+    
+        const article = await Article.findByIdAndDelete(postId)
         res.status(201).json({
             status: "success",
             data: {
