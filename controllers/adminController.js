@@ -1,7 +1,7 @@
 const Article = require('./../models/articleModel');
 const Researcher = require('./../models/researcherModel');
 const Admin = require('./../models/adminModel');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 exports.changeArticleStatus = async (req, res) => {
     try{
