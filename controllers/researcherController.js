@@ -1,8 +1,7 @@
 const Researcher = require('./../models/researcherModel');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 exports.createResearcher = async (req, res) => {
     try{
-        console.log(req.body);
         const plainPassword = req.body.password;
         delete req.body.password; // remove the plain text password from the object
         const hashedPassword = await bcrypt.hash(plainPassword, 10);
