@@ -1,9 +1,14 @@
 const mongoose = require('mongoose');
 
 const researcherSchema = new mongoose.Schema({
-    displayName: {
+    displayName: { // title + full name
+        type: String,
+        required: [true, 'Name is required'],
+        trim: true,
+    },
+    fullName: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, 'Full name is required'],
       trim: true,
     },
     email: {

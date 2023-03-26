@@ -6,11 +6,6 @@ const articlesSchema = new mongoose.Schema({
       required: [true, 'Text is required'],
       trim: true,
     },
-    author: {
-        type: String,
-        trim: true,
-        required: [true, 'Author name is required'],
-    },
     date: {
         type: Date,
         trim: true,
@@ -24,9 +19,6 @@ const articlesSchema = new mongoose.Schema({
     uid: {
         type: String,
         required: [true, 'UID is required'],
-    },
-    photoURL: {
-        type: String,
     },
     comments: {
         type: Array,

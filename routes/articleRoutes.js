@@ -36,4 +36,8 @@ router
     .route('/unlike-comment/:postId/:commentId')
     .patch(articleController.unlikeComment)
 
+router
+    .route('/delete-article/:postId')
+    .delete(articleController.deleteArticle)
+
 module.exports = router;

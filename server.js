@@ -24,7 +24,7 @@ mongoose
   .catch((e) => {
     // console.log(e);
   });
-const port = process.env.port || 8001;
+const port = process.env.port || 8000;
 
 
 app.listen(port, () => {

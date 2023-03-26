@@ -114,6 +114,33 @@ exports.changeArticleStatus = async (req, res) => {
     }
 }
 
+exports.updatePassword = async (req, res) => {
+    console.log(req.body);
+    const plainPassword = req.body.password;
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    try{
+        const admin = await Admin.findOneAndUpdate({ uid: req.params.uid }, { password: hashedPassword }, {
+            new: true, // to return the updated (new) document
+            runValidators: true,
+        })
+        if(admin === null){
+            return res.send({status: "not-found"})
+        }
+        res.status(201).json({
+            status: "success",
+            data: {
+                admin
+            }
+        });
+    }catch (error){
+        console.log("Error");
+        res.status(400).json({
+            status: "fail",
+            message: error
+        })
+    }
+}
+
 exports.login = async (req, res) => {
     try {
         return res.send({status: "success"});

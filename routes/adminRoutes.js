@@ -19,5 +19,9 @@ router
     .route('/login')
     .post(adminController.login)
 
+router
+    .route('/update-password/:uid')
+    .patch(adminController.updatePassword)
+
 
 module.exports = router;
